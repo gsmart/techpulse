@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Conda environment folders
+.env/
+.venv/
+env/
+venv/
+
+# macOS system files
+.DS_Store
+
+# VSCode project settings
+.vscode/
+
+# Logs and debug
+*.log
+logs/
+
+# Unit test cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Notebook metadata
+*.nbconvert.ipynb
+
+# Environments
+.envrc
+.env.*
+*.env
+
+# Temporary files
+*.bak
+*.swp
+*.swo
+
+# Custom
+ml-hello-env/
+ml_hello_env/
