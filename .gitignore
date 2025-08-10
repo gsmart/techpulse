@@ -50,3 +50,13 @@ dist/
 # Custom
 ml-hello-env/
 ml_hello_env/
+
+# secrets and tokens
+.secrets/
+src/credentials/
+credentials/
+*.pem
+*.key
+*.p12
+token.json
+.env

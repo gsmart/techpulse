@@ -1,124 +1,208 @@
-# `ml-framework-scaffold`
+# techpulse-agent
 
-## Overview
+> **TL;DR**
+> Pull tech news from RSS → generate short, neutral **AI summaries** → save a **.docx** → upload to Google Drive in `Daily Tech News → DDMMYYYY → 1..24`.
+> De-duplicates links with SQLite. Works with **OpenAI**, **Ollama** (local), or **no LLM** (extractive fallback).
 
-`ml-framework-scaffold` is a lightweight, production-ready Machine Learning project structure built for clarity, modularity, and scalability. It includes a `Hello World` RandomForestClassifier model using the Iris dataset, and is ideal for data science practitioners, ML engineers, or students who want a clean slate to start any ML project.
+---
+
+## Features
+
+* **Agentic summaries**: OpenAI or Ollama; falls back to clean extractive summary.
+* **Clean input**: HTML + entities decoded; feed artifacts stripped.
+* **Structured Drive path**: `Daily Tech News / DDMMYYYY / 1..24`.
+* **No duplicates**: URL-normalized, SQLite-backed de-dup.
+* **Config-driven**: Feeds in YAML; secrets via `.env`.
+* **Headless**: Works great on cron.
 
 ---
 
 ## Prerequisites
 
-- **Python**: 3.10+
-- **Conda** (recommended) or `venv` for virtual environments
+* Python **3.11+**
+* Optional: **Conda** (recommended) or `venv`
+* For Drive upload (choose one):
 
-To verify you have the required tools installed:
-
-```bash
-python --version
-conda --version   # or skip if using venv
-```
+  * **Service Account** (recommended for unattended): share a Drive folder with the service account email.
+  * **OAuth Desktop** (dev only): test-user consent; tokens in `.secrets/`.
 
 ---
 
-## Installation
-
-Choose one of the following methods:
-
-### Option 1: Using Conda (Recommended)
+## Quickstart (TL;DR)
 
 ```bash
-# Create a new environment
-conda create -n ml_hello_env python=3.10 -y
+# 1) Create env
+conda create -n techpulse python=3.11 -y
+conda activate techpulse
 
-# Activate the environment
-conda activate ml_hello_env
-
-# Install dependencies
+# 2) Install deps
 pip install -r requirements.txt
+
+# 3) Feeds
+mkdir -p src/configs
+cat > src/configs/feeds.yaml << 'EOF'
+feeds:
+  - https://www.theverge.com/rss/index.xml
+  - https://techcrunch.com/tag/artificial-intelligence/feed/
+  - https://www.technologyreview.com/feed/
+  - https://aws.amazon.com/blogs/aws/feed/
+  - https://cloud.google.com/blog/rss/
+EOF
+
+# 4) Secrets
+mkdir -p .secrets
+# Put Google service account JSON here:
+# .secrets/service_account.json
+
+# 5) .env
+cat > .env << 'EOF'
+FEEDS_FILE=src/configs/feeds.yaml
+NEWS_DB_PATH=.secrets/news_seen.sqlite
+
+# Drive (Service Account preferred)
+GOOGLE_SERVICE_ACCOUNT_JSON=.secrets/service_account.json
+GOOGLE_DRIVE_FOLDER_ID=        # parent folder id you shared with the service account (optional)
+TOP_FOLDER_NAME=Daily Tech News
+
+# AI Summaries (pick one or neither)
+# OPENAI_API_KEY=sk-...
+# AI_MODEL=gpt-4o-mini
+# OLLAMA_HOST=http://localhost:11434
+# OLLAMA_MODEL=llama3.1
+EOF
+
+# 6) Run
+python cli.py
 ```
 
-### Option 2: Using venv
+On first run you’ll see:
 
-```bash
-# Create and activate a virtual environment
-python -m venv .venv
-source .venv/bin/activate      # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Option 3: Global Install (Not Recommended)
-
-```bash
-pip install -r requirements.txt
-```
-
-> **Note**: Global installs can cause dependency conflicts with other projects.
-
----
-
-## Usage
-
-Run the project with:
-
-```bash
-python main.py
-```
-
-This will:
-
-- Load the Iris dataset  
-- Train a RandomForestClassifier  
-- Print the accuracy score  
+* Console summaries
+* A DOCX created in `tmp_docs/`
+* Upload to Drive under `Daily Tech News / DDMMYYYY / 1..24`
 
 ---
 
 ## Project Structure
 
-```bash
-ml-hello-world/
-├── data/                  # Raw, processed, and external data
-│   ├── raw/
-│   ├── processed/
-│   └── external/
-├── notebooks/             # Jupyter notebooks
-├── src/                   # Source code
-│   ├── data/              # Data loading and preprocessing
-│   ├── features/          # Feature engineering
-│   ├── models/            # Training and evaluation
-│   ├── utils/             # Helper utilities
-│   └── visualization/     # Plotting and graphs
-├── tests/                 # Unit tests
-├── main.py                # Main entry point
-├── requirements.txt       # Dependency list
-└── README.md              # You're here!
+```
+techpulse-agent/
+├─ cli.py
+├─ requirements.txt
+├─ .env                       # not committed
+├─ .secrets/                  # not committed (service_account.json, token.json, sqlite)
+│  ├─ service_account.json
+│  ├─ token.json
+│  └─ news_seen.sqlite
+├─ src/
+│  ├─ agent/
+│  │  ├─ run.py               # fetch → dedupe → summarize → docx → upload
+│  │  ├─ feeds.py             # RSS/Atom parsing
+│  │  ├─ summarize.py         # OpenAI/Ollama/extractive
+│  │  ├─ writer_docx.py       # .docx builder
+│  │  ├─ drive.py             # Google Drive (Service Account)
+│  │  └─ storage.py           # SQLite de-dup
+│  └─ configs/
+│     └─ feeds.yaml
+└─ tmp_docs/
+```
+
+**.gitignore** should include:
+
+```
+.env
+.secrets/
+credentials/
+*.pem
+*.key
+token.json
 ```
 
 ---
 
-## Platform-Specific Instructions
+## Configuration
 
-### macOS / Linux / WSL
+Edit `.env` (or set as real env vars):
 
-- Clone the repository.
-- Use Conda or venv to set up the environment.
-- Run `main.py`.
+| Var                           | Purpose                             | Example                         |
+| ----------------------------- | ----------------------------------- | ------------------------------- |
+| `FEEDS_FILE`                  | Path to YAML feed list              | `src/configs/feeds.yaml`        |
+| `NEWS_DB_PATH`                | SQLite file for de-dup              | `.secrets/news_seen.sqlite`     |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Service account JSON                | `.secrets/service_account.json` |
+| `GOOGLE_DRIVE_FOLDER_ID`      | Parent folder id (optional)         | `1AbC...xyz`                    |
+| `TOP_FOLDER_NAME`             | Top folder name in Drive            | `Daily Tech News`               |
+| `OPENAI_API_KEY`              | Use OpenAI for summaries (optional) | `sk-...`                        |
+| `AI_MODEL`                    | OpenAI model                        | `gpt-4o-mini`                   |
+| `OLLAMA_HOST`                 | Local LLM                           | `http://localhost:11434`        |
+| `OLLAMA_MODEL`                | Ollama model                        | `llama3.1`                      |
 
-### Windows
+**YAML feeds** (`src/configs/feeds.yaml`):
 
-Follow the same steps. To activate the environment:
-
-```bash
-.venv\Scripts\activate
+```yaml
+feeds:
+  - https://www.theverge.com/rss/index.xml
+  - https://techcrunch.com/tag/artificial-intelligence/feed/
 ```
 
 ---
 
-## Future Enhancements
+## Running
 
-- Add pytest test coverage  
-- Config-driven training with YAML  
-- Docker support for reproducibility  
+```bash
+conda activate techpulse
+python cli.py
 ```
 
+* Each run:
+
+  * Fetches fresh items
+  * Skips URLs seen before (even with UTM tracking variants)
+  * Produces 2–4 sentence summaries (OpenAI → Ollama → extractive)
+  * Writes a single `.docx`
+  * Uploads it to Google Drive into `Daily Tech News / DDMMYYYY / 1..24`
+
+---
+
+## Scheduling (cron)
+
+IST example: run at 5 minutes past every hour.
+
+```bash
+crontab -e
+# adjust paths to your machine
+5 * * * * cd /path/to/techpulse-agent && /Users/you/miniconda3/envs/techpulse/bin/python cli.py >> agent.log 2>&1
+```
+
+---
+
+## Troubleshooting
+
+* **HTML codes like `[&#8230;]` in text**
+  We decode entities and strip feedburner ellipses automatically in `summarize.py`. If you still see artifacts, ensure you’re running the latest code.
+
+* **OAuth app blocked**
+  Use **Service Account** flow (recommended). Share your Drive parent folder with the service account email, then set `GOOGLE_SERVICE_ACCOUNT_JSON` (and optionally `GOOGLE_DRIVE_FOLDER_ID`).
+
+* **Feeds file not found**
+  Set `FEEDS_FILE` correctly or keep it at `src/configs/feeds.yaml`.
+
+* **RequestsDependencyWarning (chardet/charset\_normalizer)**
+  Run: `pip install charset-normalizer` (or `chardet`).
+
+* **No new items**
+  The de-dup DB remembers URLs. Clear old entries (`.secrets/news_seen.sqlite`) or adjust pruning in `storage.py`.
+
+---
+
+## Roadmap
+
+* Topic tags per feed (e.g., ai/devops/security)
+* Native Google Docs output
+* Summarization knobs (length/tone) per feed
+* Slack/Telegram delivery hooks
+
+---
+
+## License
+
+MIT. Use it, tweak it, ship it.
