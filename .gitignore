@@ -60,3 +60,4 @@ credentials/
 *.p12
 token.json
 .env
+tmp_docs/

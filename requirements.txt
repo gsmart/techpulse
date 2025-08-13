@@ -1,16 +1,41 @@
-scikit-learn
+# --- Core data/science ---
 numpy
 pandas
+scikit-learn
 matplotlib
 jupyter
+
+# --- Feeds / utilities ---
 feedparser==6.0.11
 python-dateutil==2.9.0.post0
 tqdm==4.66.4
 PyYAML==6.0.2
+python-dotenv>=1.0.1
+requests>=2.32.0
+
+# --- Google Drive / Auth (for uploads) ---
 google-api-python-client==2.137.0
 google-auth==2.33.0
 google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+
+# --- DOCX output ---
 python-docx==1.1.2
+
+# --- OpenAI client (cloud backend) ---
 openai==1.37.1
-requests>=2.32.0
-python-dotenv>=1.0.1
+
+# --- Local HF stack (Transformers) ---
+transformers>=4.42.0,<5
+tokenizers>=0.19.0
+sentencepiece>=0.2.0
+# Pin Torch to the version you already have with MPS working:
+torch==2.6.0
+
+# Optional: extractive fallback (TextRank)
+sumy>=0.11.0
+
+# --- Hot HF summarizer server (FastAPI + Uvicorn) ---
+fastapi>=0.112
+uvicorn[standard]>=0.30
+pydantic>=2.6,<3
